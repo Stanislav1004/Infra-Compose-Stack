@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  web-app:
+    build: .
+    container_name: bootcamp-web
+    ports:
+      - "8080:8080"
+    restart: always
+
+  cache:
+    image: redis:7-alpine
+    container_name: bootcamp-redis
+    ports:
+      - "6379:6379"
+    restart: always
