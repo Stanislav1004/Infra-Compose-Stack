@@ -1,13 +1,33 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import redis
 
-class SimpleHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(b"Hello from Dockerized DevOps Bootcamp App!\n")
+app = FastAPI(title="DevOps Stack App")
 
-if __name__ == "__main__":
-    server = HTTPServer(("0.0.0.0", 8080), SimpleHandler)
-    print("Server started on port 8080...")
-    server.serve_forever()
+# Додаємо CORS, щоб фронт міг нормально стукатись до бека
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Підключаємося до Redis за назвою сервісу в Docker Compose
+redis_host = os.getenv("REDIS_HOST", "cache")
+r = redis.Redis(host=redis_host, port=6379, decode_responses=True)
+
+@app.get("/")
+def read_root():
+# Збільшуємо лічильник відвідувань у Redis при кожному запиті
+    count = r.incr("hits")
+    return {
+        "status": "success",
+        "message": "Welcome to the DevOps Stack Production App!",
+        "visits": count
+    }
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
